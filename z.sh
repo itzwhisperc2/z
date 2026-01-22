@@ -73,7 +73,7 @@ async def agent_loop(uri):
                         }))
 
         except Exception:
-            wait_time = random.uniform(5, 45)
+            wait_time = random.uniform(5, 10)
             await asyncio.sleep(wait_time)
 
 if __name__ == "__main__":
